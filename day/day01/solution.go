@@ -12,6 +12,10 @@ import (
 
 type Solution struct{}
 
+func init() {
+	day.Register(1, Solution{})
+}
+
 func (s Solution) Part1(input string) string {
 	directions := parseRotations(input)
 
