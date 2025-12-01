@@ -6,3 +6,6 @@ run:
 
 test:
   go test ./...
+
+new DAY:
+  go run bin/newday.go {{DAY}}
