@@ -33,7 +33,20 @@ func (s Solution) Part1(input string) string {
 }
 
 func (s Solution) Part2(input string) string {
-	return "not implemented"
+	sum := 0
+
+	m := regexp2.MustCompile(`^(.*)\1+$`, 0)
+
+	ranges := parse(input)
+	for _, idRange := range ranges {
+		for id := idRange.start; id <= idRange.end; id++ {
+			match, _ := m.MatchString(strconv.Itoa(id))
+			if match {
+				sum = sum + id
+			}
+		}
+	}
+	return strconv.Itoa(sum)
 }
 
 type idRange struct {

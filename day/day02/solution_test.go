@@ -16,7 +16,7 @@ func TestPart1(t *testing.T) {
 
 func TestPart2(t *testing.T) {
 	s := Solution{}
-	expected := ""
+	expected := "4174379265"
 	result := s.Part2(exampleInput)
 
 	if result != expected {
