@@ -5,6 +5,7 @@ import (
 
 	"github.com/anazworth/aoc_2025/day"
 	_ "github.com/anazworth/aoc_2025/day/day01"
+	_ "github.com/anazworth/aoc_2025/day/day02"
 	"github.com/anazworth/aoc_2025/utils"
 )
 
