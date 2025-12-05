@@ -6,3 +6,4 @@
 | [Day 02](day/day02) | ⭐️⭐️ |
 | [Day 03](day/day03) | ⭐️⭐️ |
 | [Day 04](day/day04) | ⭐️⭐️ |
+| [Day 05](day/day05) | ⭐️⭐️ |
