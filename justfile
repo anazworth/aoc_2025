@@ -4,11 +4,17 @@ just:
 run:
   go run main.go
 
-bench-sync:
-  hyperfine -i --runs 10 'GOMAXPROCS=1 just run'
+build:
+  go build -o aoc main.go 
 
-bench:
-  hyperfine -i --runs 10 'just run'
+bench-sync: build
+  hyperfine -i -w 1 --runs 10 'GOMAXPROCS=1 ./aoc'
+
+bench: build
+  hyperfine -i -w 1 --runs 10 './aoc'
+
+bench-compare: build
+  hyperfine -i -w 1 --runs 10 './aoc' 'GOMAXPROCS=1 ./aoc'
 
 test:
   go test ./...
