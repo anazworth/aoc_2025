@@ -8,6 +8,7 @@ import (
 	_ "github.com/anazworth/aoc_2025/day/day03"
 	_ "github.com/anazworth/aoc_2025/day/day04"
 	_ "github.com/anazworth/aoc_2025/day/day05"
+	_ "github.com/anazworth/aoc_2025/day/day06"
 	"github.com/anazworth/aoc_2025/utils"
 	"sync"
 	"time"
