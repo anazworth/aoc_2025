@@ -8,3 +8,4 @@
 | [Day 04](day/day04) | ⭐️⭐️ |
 | [Day 05](day/day05) | ⭐️⭐️ |
 | [Day 06](day/day06) | ⭐️⭐️ |
+| [Day 07](day/day07) | ⭐️⭐️ |
