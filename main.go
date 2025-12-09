@@ -11,6 +11,7 @@ import (
 	_ "github.com/anazworth/aoc_2025/day/day06"
 	_ "github.com/anazworth/aoc_2025/day/day07"
 	_ "github.com/anazworth/aoc_2025/day/day08"
+	_ "github.com/anazworth/aoc_2025/day/day09"
 	"github.com/anazworth/aoc_2025/utils"
 	"sync"
 	"time"
