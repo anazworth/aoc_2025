@@ -4,6 +4,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
 
 	"github.com/anazworth/aoc_2025/day"
 	"github.com/anazworth/aoc_2025/utils"
@@ -33,18 +34,40 @@ func (s Solution) Part1(input string) string {
 	}
 	return strconv.Itoa(max)
 }
+
 func (s Solution) Part2(input string) string {
 	tiles := parse(input)
 	fill := buildFillWithPerimeter(tiles)
 
-	maxArea := 0
-	for i := 0; i < len(tiles)-1; i++ {
-		for j := i + 1; j < len(tiles); j++ {
-			if rectangleValid(tiles[i], tiles[j], fill) {
-				maxArea = max(maxArea, area(tiles[i], tiles[j]))
+	var (
+		maxArea int
+		mu      sync.Mutex
+		wg      sync.WaitGroup
+	)
+
+	for i := range len(tiles) - 1 {
+		wg.Go(func() {
+			localMax := 0
+			for j := i + 1; j < len(tiles); j++ {
+				if rectangleValid(tiles[i], tiles[j], fill) {
+					a := area(tiles[i], tiles[j])
+					if a > localMax {
+						localMax = a
+					}
+				}
 			}
-		}
+
+			if localMax > 0 {
+				mu.Lock()
+				if localMax > maxArea {
+					maxArea = localMax
+				}
+				mu.Unlock()
+			}
+		})
 	}
+
+	wg.Wait()
 	return strconv.Itoa(maxArea)
 }
 
