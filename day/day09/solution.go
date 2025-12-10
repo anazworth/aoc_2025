@@ -1,6 +1,7 @@
 package day9
 
 import (
+	"sort"
 	"strconv"
 	"strings"
 
@@ -34,86 +35,70 @@ func (s Solution) Part1(input string) string {
 }
 func (s Solution) Part2(input string) string {
 	tiles := parse(input)
-	floormap := getAllPositions(tiles)
+	fill := buildFillWithPerimeter(tiles)
 
-	// Pre-compute all interior points
-	interiorMap := computeInteriorPoints(tiles, floormap)
-
-	maxArea := findMaxRectangleArea(tiles, interiorMap)
+	maxArea := 0
+	for i := 0; i < len(tiles)-1; i++ {
+		for j := i + 1; j < len(tiles); j++ {
+			if rectangleValid(tiles[i], tiles[j], fill) {
+				maxArea = max(maxArea, area(tiles[i], tiles[j]))
+			}
+		}
+	}
 	return strconv.Itoa(maxArea)
 }
 
-func computeInteriorPoints(polygon []pos, perimeter map[pos]bool) map[pos]bool {
-	interior := make(map[pos]bool)
+func buildFillWithPerimeter(polygon []pos) map[int][]interval {
+	fill := buildFill(polygon)
+	perim := buildPerimeterIntervals(polygon)
 
-	// Find bounding box
-	minX, maxX := polygon[0].x, polygon[0].x
-	minY, maxY := polygon[0].y, polygon[0].y
-	for _, p := range polygon {
-		if p.x < minX {
-			minX = p.x
-		}
-		if p.x > maxX {
-			maxX = p.x
-		}
-		if p.y < minY {
-			minY = p.y
-		}
-		if p.y > maxY {
-			maxY = p.y
-		}
+	for y, ps := range perim {
+		fill[y] = mergeIntervals(fill[y], ps)
 	}
 
-	// Check every point in bounding box once
-	for y := minY; y <= maxY; y++ {
-		for x := minX; x <= maxX; x++ {
-			p := pos{x, y}
-			if perimeter[p] || isInside(p, polygon) {
-				interior[p] = true
-			}
-		}
-	}
-
-	return interior
+	return fill
 }
 
-func findMaxRectangleArea(tiles []pos, interior map[pos]bool) int {
-	maxArea := 0
-
-	// Try all pairs of points from the tiles list
-	for i := 0; i < len(tiles)-1; i++ {
-		for j := i + 1; j < len(tiles); j++ {
-			p1 := tiles[i]
-			p2 := tiles[j]
-
-			// Check if the rectangle is valid using pre-computed interior
-			if isRectangleValidFast(p1, p2, interior) {
-				curr := area(p1, p2)
-				if curr > maxArea {
-					maxArea = curr
-				}
-			}
-		}
+func mergeIntervals(a, b []interval) []interval {
+	all := append(a, b...)
+	if len(all) == 0 {
+		return nil
 	}
 
-	return maxArea
+	sort.Slice(all, func(i, j int) bool {
+		return all[i].x1 < all[j].x1
+	})
+
+	out := []interval{all[0]}
+	for _, in := range all[1:] {
+		last := &out[len(out)-1]
+		if in.x1 <= last.x2+1 {
+			last.x2 = max(last.x2, in.x2)
+		} else {
+			out = append(out, in)
+		}
+	}
+	return out
 }
 
-func isRectangleValidFast(p1, p2 pos, interior map[pos]bool) bool {
+func rectangleValid(p1, p2 pos, fill map[int][]interval) bool {
 	x1, x2 := min(p1.x, p2.x), max(p1.x, p2.x)
 	y1, y2 := min(p1.y, p2.y), max(p1.y, p2.y)
 
-	// Check all positions on the rectangle's perimeter
-	// Top and bottom edges
-	for x := x1; x <= x2; x++ {
-		if !interior[pos{x, y1}] || !interior[pos{x, y2}] {
-			return false
-		}
+	// top & bottom edges
+	if !intervalContains(fill[y1], x1, x2) {
+		return false
+	}
+	if !intervalContains(fill[y2], x1, x2) {
+		return false
 	}
 
-	// Left and right edges (excluding corners already checked)
-	for y := y1 + 1; y < y2; y++ {
-		if !interior[pos{x1, y}] || !interior[pos{x2, y}] {
+	// vertical edges
+	for y := y1; y <= y2; y++ {
+		if !intervalContains(fill[y], x1, x1) {
+			return false
+		}
+		if !intervalContains(fill[y], x2, x2) {
 			return false
 		}
 	}
@@ -121,34 +106,73 @@ func isRectangleValidFast(p1, p2 pos, interior map[pos]bool) bool {
 	return true
 }
 
-func isInside(point pos, polygon []pos) bool {
-	count := 0
-	n := len(polygon)
+func intervalContains(intervals []interval, x1, x2 int) bool {
+	for _, in := range intervals {
+		if in.x1 <= x1 && x2 <= in.x2 {
+			return true
+		}
+	}
+	return false
+}
 
-	for i := 0; i < n; i++ {
-		p1 := polygon[i]
-		p2 := polygon[(i+1)%n]
+type interval struct {
+	x1, x2 int
+}
 
-		if rayIntersectsSegment(point, p1, p2) {
-			count++
+func buildFill(polygon []pos) map[int][]interval {
+	fill := make(map[int][]interval)
+
+	minY, maxY := polygon[0].y, polygon[0].y
+	for _, p := range polygon {
+		minY = min(minY, p.y)
+		maxY = max(maxY, p.y)
+	}
+
+	for y := minY; y <= maxY; y++ {
+		var xs []int
+
+		for i := 0; i < len(polygon); i++ {
+			p1 := polygon[i]
+			p2 := polygon[(i+1)%len(polygon)]
+
+			if p1.y == p2.y {
+				continue
+			}
+			if p1.y > p2.y {
+				p1, p2 = p2, p1
+			}
+			if y < p1.y || y >= p2.y {
+				continue
+			}
+
+			x := p1.x + (y-p1.y)*(p2.x-p1.x)/(p2.y-p1.y)
+			xs = append(xs, x)
+		}
+
+		sort.Ints(xs)
+
+		for i := 0; i+1 < len(xs); i += 2 {
+			fill[y] = append(fill[y], interval{xs[i], xs[i+1]})
 		}
 	}
 
-	return count%2 == 1
+	return fill
 }
+func buildPerimeterIntervals(polygon []pos) map[int][]interval {
+	perim := make(map[int][]interval)
 
-func rayIntersectsSegment(point, p1, p2 pos) bool {
-	if p1.y == p2.y {
-		return false
+	for i := 0; i < len(polygon); i++ {
+		p1 := polygon[i]
+		p2 := polygon[(i+1)%len(polygon)]
+
+		// Horizontal edge
+		if p1.y == p2.y {
+			x1, x2 := min(p1.x, p2.x), max(p1.x, p2.x)
+			perim[p1.y] = append(perim[p1.y], interval{x1, x2})
+		}
 	}
 
-	if point.y < min(p1.y, p2.y) || point.y >= max(p1.y, p2.y) {
-		return false
-	}
-
-	xIntersect := p1.x + (point.y-p1.y)*(p2.x-p1.x)/(p2.y-p1.y)
-
-	return xIntersect >= point.x
+	return perim
 }
 
 func parse(input string) []pos {
@@ -164,50 +188,6 @@ func parse(input string) []pos {
 	return result
 }
 
-func getAllPositions(positions []pos) map[pos]bool {
-	allPos := make(map[pos]bool)
-
-	for i := 0; i < len(positions)-1; i++ {
-		start := positions[i]
-		end := positions[(i+1)%len(positions)] // Wrap to start
-
-		// Get all positions between start and end (inclusive)
-		between := getPositionsBetween(start, end)
-		for _, p := range between {
-			allPos[p] = true
-		}
-	}
-
-	return allPos
-}
-
-func getPositionsBetween(start, end pos) []pos {
-	var result []pos
-
-	// Determine direction
-	dx := sign(end.x - start.x)
-	dy := sign(end.y - start.y)
-
-	// Walk from start to end
-	current := start
-	for current != end {
-		result = append(result, current)
-		current.x += dx
-		current.y += dy
-	}
-	result = append(result, end) // Include the end position
-
-	return result
-}
-
-func sign(n int) int {
-	if n > 0 {
-		return 1
-	} else if n < 0 {
-		return -1
-	}
-	return 0
-}
 func area(p1, p2 pos) int {
 	width := abs(p2.x-p1.x) + 1
 	height := abs(p2.y-p1.y) + 1
