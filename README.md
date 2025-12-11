@@ -11,3 +11,4 @@
 | [Day 07](day/day07) | ⭐️⭐️ |
 | [Day 08](day/day08) | ⭐️⭐️ |
 | [Day 09](day/day09) | ⭐️⭐️ |
+| [Day 10](day/day10) | ⭐️    |
